@@ -27,6 +27,19 @@ void toggleGREEN(void);
 void setORANGE(char value);
 void toggleORANGE(void);
 
+// Sine Wave: 8-bit, 32 samples/cycle
+const uint8_t sine_table[32] = {127,151,175,197,216,232,244,251,254,251,244,
+232,216,197,175,151,127,102,78,56,37,21,9,2,0,2,9,21,37,56,78,102};
+// Triangle Wave: 8-bit, 32 samples/cycle
+const uint8_t triangle_table[32] = {0,15,31,47,63,79,95,111,127,142,158,174,
+190,206,222,238,254,238,222,206,190,174,158,142,127,111,95,79,63,47,31,15};
+// Sawtooth Wave: 8-bit, 32 samples/cycle
+const uint8_t sawtooth_table[32] = {0,7,15,23,31,39,47,55,63,71,79,87,95,103,
+111,119,127,134,142,150,158,166,174,182,190,198,206,214,222,230,238,246};
+// Square Wave: 8-bit, 32 samples/cycle
+const uint8_t square_table[32] = {254,254,254,254,254,254,254,254,254,254,
+254,254,254,254,254,254,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
 
 /**
   * @brief  The application entry point.
@@ -38,8 +51,9 @@ int main(void)
   SystemClock_Config();
 	
 	// Enable GPIOB and GPIOC in the RCC.
-	RCC->AHBENR  |= (RCC_AHBENR_GPIOCEN); // Enables the GPIOC clock in the RCC.
+	RCC->AHBENR  |= (RCC_AHBENR_GPIOCEN) | (RCC_AHBENR_GPIOAEN); // Enables the GPIOC clock in the RCC.
 	RCC->APB2ENR |= (RCC_APB2ENR_ADC1EN);
+	RCC->APB1ENR |= (RCC_APB1ENR_DACEN);
 	
 	// Configures GPIOC Pins 6 and 7 (RED LED and BLUE LED)
 	GPIOC->MODER   |=  (1 << 12) | (1 << 14);
@@ -53,10 +67,16 @@ int main(void)
 	GPIOC->OSPEEDR &= ~((1 << 16) | (1 << 18));
 	GPIOC->PUPDR   &= ~((1 << 16) | (1 << 17) | (1 << 18) | (1 << 19));
 	
-	// Configures PC0 for analog mode.
+	// Configures PC0 for analog mode(ADC).
 	GPIOC->MODER |=   (1 << 0) | (1 << 1);
 	GPIOC->PUPDR &= ~((1 << 0) | (1 << 1));
 	
+	// Configures PA4 for analog mode(DAC).
+	GPIOA->MODER |=   (1 << 8) | (1 << 9);
+	GPIOA->PUPDR &= ~((1 << 8) | (1 << 9));
+	
+	DAC1->SWTRIGR |= (1 << 0);
+	DAC1->CR |= (1 << 0);
 	
 	ADC1->CFGR1 |=  (1 << 4) | (1 << 13);             // 8-bit resolution, continuous conversion mode, hardware triggers disabled.
 	ADC1->CFGR1 &= ~((1 << 3)| (1 << 10)| (1 << 11)); // 8-bit resolution, continuous conversion mode, hardware triggers disabled.
@@ -130,6 +150,13 @@ int main(void)
   while (1)
   {
 		
+		for(int i = 0; i < 32; i++){
+			DAC1->DHR8R1 = sine_table[i];
+			HAL_Delay(1);
+		}
+		
+	
+	/*
 	if(ADC1->DR>=0 && ADC1->DR<64){
 		setRED('1');
 		setBLUE('0');
@@ -155,7 +182,7 @@ int main(void)
 		setORANGE('1');
 		setGREEN('1');
 	}
-	
+	*/
   }
 }
 
